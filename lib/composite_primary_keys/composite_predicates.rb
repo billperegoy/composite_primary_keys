@@ -8,13 +8,27 @@ module CompositePrimaryKeys
       end
     end
 
-    def cpk_or_predicate(predicates)
-      or_predicate = predicates.map do |predicate|
-        ::Arel::Nodes::Grouping.new(predicate)
-      end.inject do |memo, node|
-        ::Arel::Nodes::Or.new(memo, node)
+    def figure_engine(table)
+      case table
+        when Arel::Nodes::TableAlias
+          table.left.engine
+        when Arel::Table
+          table.engine
+        when ::ActiveRecord::Base
+          table
+        else
+          nil
       end
-      ::Arel::Nodes::Grouping.new(or_predicate)
+    end
+
+    def cpk_or_predicate(predicates, table = nil)
+      engine = figure_engine(table)
+      predicates = predicates.map do |predicate|
+        predicate_sql = engine ? predicate.to_sql(engine) : predicate.to_sql
+        "(#{predicate_sql})"
+      end
+      predicates = "(#{predicates.join(" OR ")})"
+      Arel::Nodes::SqlLiteral.new(predicates)
     end
 
     def cpk_id_predicate(table, keys, values)
