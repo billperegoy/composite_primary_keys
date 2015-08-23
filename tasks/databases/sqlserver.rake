@@ -11,9 +11,9 @@ namespace :sqlserver do
   end
 
   desc 'Drop the SQL Server test database'
-  task :drop_database => :load_connection do 
+  task :drop_database => :load_connection do
     options_str = connection_string
-    
+
     schema = File.join(PROJECT_ROOT, 'test', 'fixtures', 'db_definitions', 'sqlserver.drop.sql')
     sh %( sqsh #{options_str} -i #{schema} )
   end
